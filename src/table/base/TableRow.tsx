@@ -41,11 +41,7 @@ const TableRow = <D extends DataType>(props: RowProps<D>) => {
     expandedRow,
     expandOnRowClick,
     handleExpandChange,
-    sortOnRowDraggable,
-    onDragStart,
-    onDragOver,
-    onDrop,
-    onDragEnd,
+    getDragProps,
   } = props;
   const { flattenColumns } = useTableContext();
   const baseRow = flattenColumns.map((column, colIndex) => {
@@ -228,29 +224,8 @@ const TableRow = <D extends DataType>(props: RowProps<D>) => {
     return {};
   }
 
-  function getDragProps() {
-    if (sortOnRowDraggable) {
-      return {
-        draggable: true,
-        onDragStart: (e) => {
-          onDragStart(e, rowIndex, record);
-        },
-        onDragOver: (e) => {
-          onDragOver(e, rowIndex, record);
-        },
-        onDrop: (e) => {
-          onDrop(e, rowIndex, record);
-        },
-        onDragEnd: (e) => {
-          onDragEnd(e, rowIndex, record);
-        },
-      };
-    }
-    return {};
-  }
-
   return (
-    <tr className={classes} {...rowEvents} {...getExpandOnClickEvent()} {...getDragProps()}>
+    <tr className={classes} {...rowEvents} {...getExpandOnClickEvent()} {...getDragProps?.(rowIndex, record)}>
       {baseRow}
     </tr>
   );

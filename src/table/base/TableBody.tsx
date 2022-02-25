@@ -54,12 +54,8 @@ const TableBody = forwardRef((props: TableBodyProps, ref: React.Ref<HTMLTableSec
     handleExpandChange,
     renderExpandRow,
     rowspanAndColspan,
-    sortOnRowDraggable,
     dragging,
-    onDragStart,
-    onDragOver,
-    onDrop,
-    onDragEnd,
+    getDragProps,
   } = props;
   const { flattenData } = useTableContext();
   const flattenDataVisible = flattenData || data;
@@ -89,15 +85,7 @@ const TableBody = forwardRef((props: TableBodyProps, ref: React.Ref<HTMLTableSec
               }
             : {})}
           rowEvents={rowEvents}
-          {...(sortOnRowDraggable
-            ? {
-                sortOnRowDraggable,
-                onDragStart,
-                onDragOver,
-                onDrop,
-                onDragEnd,
-              }
-            : {})}
+          getDragProps={getDragProps}
         />
         {expandedRow ? renderExpandRow(row, index, rowKeyValue) : null}
       </React.Fragment>

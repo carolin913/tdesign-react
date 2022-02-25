@@ -41,8 +41,8 @@ const TagInput = forwardRef((props: TagInputProps, ref) => {
 
   const { isHover, addHover, cancelHover } = useHover(props);
   const { getDragProps } = useDragSorter({
-    ...props,
-    sortOnDraggable: props.dragSort,
+    dragSort: props.dragSort,
+    onDragSort: props.onDragSort,
   });
 
   const { scrollToRight, onWheel, scrollToRightOnEnter, scrollToLeftOnLeave, tagInputRef } = useTagScroll(props);

@@ -18,8 +18,8 @@ export default function PrimaryTable(props: PrimaryTableProps) {
     columns: selectColumns,
     data: filterData,
   });
-  const { dragging, onDragStart, onDragOver, onDrop, onDragEnd } = useDragSorter({
-    sortOnDraggable: props.sortOnRowDraggable,
+  const { dragging, getDragProps } = useDragSorter({
+    dragSort: props.sortOnRowDraggable,
     onDragSort: props.onDragSort,
   });
 
@@ -35,10 +35,7 @@ export default function PrimaryTable(props: PrimaryTableProps) {
       handleExpandChange={handleExpandChange}
       renderExpandRow={renderExpandRow}
       dragging={dragging}
-      onDragStart={onDragStart}
-      onDragOver={onDragOver}
-      onDrop={onDrop}
-      onDragEnd={onDragEnd}
+      getDragProps={getDragProps}
     />
   );
 }

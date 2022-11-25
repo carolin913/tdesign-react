@@ -1,6 +1,6 @@
 import React, { forwardRef, useState, useEffect, useRef, useImperativeHandle } from 'react';
 import classNames from 'classnames';
-import Popup, { PopupVisibleChangeContext, PopupRef } from '../popup';
+import Popup, { PopupRef } from '../popup';
 import useConfig from '../hooks/useConfig';
 import { TdTooltipProps } from './type';
 import { tooltipDefaultProps } from './defaultProps';
@@ -12,22 +12,13 @@ export interface TooltipRef extends PopupRef {
 }
 
 const Tooltip = forwardRef((props: TdTooltipProps, ref) => {
-  const {
-    theme,
-    showArrow = true,
-    destroyOnClose = true,
-    overlayClassName,
-    children,
-    duration = 0,
-    placement = 'top',
-    ...restProps
-  } = props;
+  const { theme, showArrow, destroyOnClose, overlayClassName, children, duration, placement, ...restProps } = props;
+
   const { classPrefix } = useConfig();
   const [isTipShowed, setTipshow] = useState(duration !== 0);
   const [timeup, setTimeup] = useState(false);
   const popupRef = useRef<PopupRef>();
   const timerRef = useRef<number | null>(null);
-  const [offset, setOffset] = useState([0, 0]);
   const toolTipClass = classNames(
     `${classPrefix}-tooltip`,
     {
@@ -35,33 +26,14 @@ const Tooltip = forwardRef((props: TdTooltipProps, ref) => {
     },
     overlayClassName,
   );
-  const isPlacedByMouse = placement === 'mouse';
 
   const setVisible = (v: boolean) => {
     if (duration !== 0) setTimeup(false);
     setTipshow(v);
   };
 
-  const calculatePos = (e) => {
-    const rect = (e.target as HTMLElement).getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    return {
-      x,
-      y,
-    };
-  };
-
-  const handleShowTip = (visible: boolean, { e, trigger }: PopupVisibleChangeContext) => {
+  const handleShowTip = (visible: boolean) => {
     if (duration === 0 || (duration !== 0 && timeup)) {
-      if (
-        visible &&
-        placement === 'mouse' &&
-        (trigger === 'trigger-element-hover' || trigger === 'trigger-element-click')
-      ) {
-        const { x } = calculatePos(e);
-        setOffset([x, 0]);
-      }
       setTipshow(visible);
     }
   };
@@ -87,14 +59,11 @@ const Tooltip = forwardRef((props: TdTooltipProps, ref) => {
     <Popup
       ref={popupRef}
       destroyOnClose={destroyOnClose}
-      showArrow={isPlacedByMouse ? false : showArrow}
+      showArrow={showArrow}
       overlayClassName={toolTipClass}
       visible={isTipShowed}
       onVisibleChange={handleShowTip}
-      popperOptions={{
-        modifiers: isPlacedByMouse ? [{ name: 'offset', options: { offset } }] : [],
-      }}
-      placement={isPlacedByMouse ? 'bottom-left' : placement}
+      placement={placement}
       {...restProps}
     >
       {children}

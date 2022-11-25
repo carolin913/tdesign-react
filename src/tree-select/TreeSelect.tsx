@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, forwardRef, ElementRef, useEffect } from 'react';
+import React, { useCallback, useMemo, useRef, forwardRef, ElementRef, useEffect, useImperativeHandle } from 'react';
 
 import classNames from 'classnames';
 import type { TdTreeSelectProps, TreeSelectValue } from './type';
@@ -28,7 +28,7 @@ export interface NodeOptions {
 const useMergeFn = <T extends any[]>(...fns: Array<(...args: T) => void>) =>
   usePersistFn((...args: T) => fns.forEach((fn) => fn?.(...args)));
 
-const TreeSelect = forwardRef((props: TreeSelectProps, ref: React.Ref<HTMLDivElement>) => {
+const TreeSelect = forwardRef((props: TreeSelectProps, ref) => {
   /* ---------------------------------config---------------------------------------- */
 
   // 国际化文本初始化
@@ -68,8 +68,14 @@ const TreeSelect = forwardRef((props: TreeSelectProps, ref: React.Ref<HTMLDivEle
   const [filterInput, setFilterInput] = useControlled(props, 'inputValue', onInputChange);
 
   const treeRef = useRef<ElementRef<typeof Tree>>();
+  const selectInputRef = useRef();
 
   const { normalizeValue, formatValue, getNodeItem } = useTreeSelectUtils(props, treeRef);
+
+  useImperativeHandle(ref, () => ({
+    ...(selectInputRef.current || {}),
+    ...(treeRef.current || {}),
+  }));
 
   /* ---------------------------------computed value---------------------------------------- */
 
@@ -92,13 +98,36 @@ const TreeSelect = forwardRef((props: TreeSelectProps, ref: React.Ref<HTMLDivEle
     return filterable && popupVisible ? filterInput : normalizedValue[0] || '';
   }, [multiple, normalizedValue, filterable, popupVisible, filterInput]);
 
+  const normalizedValueDisplay = useMemo(() => {
+    if (!valueDisplay) {
+      return;
+    }
+    if (typeof valueDisplay === 'string') return valueDisplay;
+    if (multiple) return ({ onClose }) => valueDisplay({ value: normalizedValue, onClose });
+    return normalizedValue.length ? (valueDisplay({ value: normalizedValue[0], onClose: noop }) as string) : '';
+  }, [valueDisplay, multiple, normalizedValue]);
+
+  const internalInputValueDisplay = useMemo(() => {
+    // 只有单选且下拉展开时需要隐藏 valueDisplay
+    if (filterable && !multiple && popupVisible) {
+      return undefined;
+    }
+    return normalizedValueDisplay;
+  }, [filterable, popupVisible, multiple, normalizedValueDisplay]);
+
   const inputPlaceholder = useMemo(() => {
     // 可筛选、单选、弹框且有值时提示当前值
     if (filterable && !multiple && popupVisible && normalizedValue.length) {
+      // 设置了 valueDisplay 时，优先展示 valueDisplay
+      const valueDisplayPlaceholder = normalizedValueDisplay;
+      if (typeof valueDisplayPlaceholder === 'string') {
+        return valueDisplayPlaceholder;
+      }
+
       return typeof normalizedValue[0].label === 'string' ? normalizedValue[0].label : String(normalizedValue[0].value);
     }
     return placeholder;
-  }, [filterable, multiple, popupVisible, normalizedValue, placeholder]);
+  }, [filterable, multiple, popupVisible, normalizedValue, placeholder, normalizedValueDisplay]);
 
   const showLoading = !disabled && loading;
 
@@ -205,6 +234,7 @@ const TreeSelect = forwardRef((props: TreeSelectProps, ref: React.Ref<HTMLDivEle
         disabled={disabled}
         empty={empty}
         allowFoldNodeOnFilter={true}
+        expandOnClickNode={true}
         {...(multiple
           ? {
               checkable: true,
@@ -244,19 +274,13 @@ const TreeSelect = forwardRef((props: TreeSelectProps, ref: React.Ref<HTMLDivEle
       prefixIcon
     );
 
-  const normalizedValueDisplay = () => {
-    if (typeof valueDisplay === 'string') return valueDisplay;
-    if (multiple) return ({ onClose }) => valueDisplay({ value: normalizedValue, onClose });
-    return normalizedValue.length ? (valueDisplay({ value: normalizedValue[0], onClose: noop }) as string) : '';
-  };
-
   return (
     <SelectInput
       status={props.status}
       tips={props.tips}
       {...props.selectInputProps}
       {...selectInputProps}
-      ref={ref}
+      ref={selectInputRef}
       className={classNames(
         `${classPrefix}-tree-select`,
         {
@@ -288,7 +312,7 @@ const TreeSelect = forwardRef((props: TreeSelectProps, ref: React.Ref<HTMLDivEle
       }
       collapsedItems={renderCollapsedItems}
       label={renderLabel()}
-      valueDisplay={valueDisplay && normalizedValueDisplay()}
+      valueDisplay={internalInputValueDisplay}
     />
   );
 });

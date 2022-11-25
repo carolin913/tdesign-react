@@ -1,23 +1,28 @@
 import React, { forwardRef, useState, useEffect, useRef, useImperativeHandle } from 'react';
 import classNames from 'classnames';
-import Popup, { PopupRef } from '../popup';
+import Popup, { PopupVisibleChangeContext } from '../popup';
 import useConfig from '../hooks/useConfig';
 import { TdTooltipProps } from './type';
 import { tooltipDefaultProps } from './defaultProps';
 
 export type TooltipProps = TdTooltipProps;
 
-export interface TooltipRef extends PopupRef {
-  setVisible?: (v: boolean) => void;
-}
-
 const Tooltip = forwardRef((props: TdTooltipProps, ref) => {
-  const { theme, showArrow, destroyOnClose, overlayClassName, children, duration, placement, ...restProps } = props;
+  const {
+    theme,
+    showArrow,
+    destroyOnClose,
+    overlayClassName,
+    children,
+    duration,
+    placement,
+    onVisibleChange,
+    ...restProps
+  } = props;
 
   const { classPrefix } = useConfig();
-  const [isTipShowed, setTipshow] = useState(duration !== 0);
-  const [timeup, setTimeup] = useState(false);
-  const popupRef = useRef<PopupRef>();
+  const [timeUp, setTimeUp] = useState(false);
+  const popupRef = useRef(null);
   const timerRef = useRef<number | null>(null);
   const toolTipClass = classNames(
     `${classPrefix}-tooltip`,
@@ -27,31 +32,25 @@ const Tooltip = forwardRef((props: TdTooltipProps, ref) => {
     overlayClassName,
   );
 
-  const setVisible = (v: boolean) => {
-    if (duration !== 0) setTimeup(false);
-    setTipshow(v);
-  };
-
-  const handleShowTip = (visible: boolean) => {
-    if (duration === 0 || (duration !== 0 && timeup)) {
-      setTipshow(visible);
-    }
-  };
+  function handleVisibleChange(visible: boolean, { e, trigger }: PopupVisibleChangeContext) {
+    setTimeUp(false);
+    onVisibleChange?.(visible, { e, trigger });
+  }
 
   useEffect(() => {
-    if (duration !== 0 && !timeup) {
+    if (duration !== 0 && !timeUp) {
+      popupRef.current?.setVisible?.(true);
       timerRef.current = window.setTimeout(() => {
-        setTipshow(false);
-        setTimeup(true);
+        popupRef.current?.setVisible?.(false);
+        setTimeUp(true);
       }, duration);
     }
     return () => {
-      if (timerRef.current) window.clearTimeout(timerRef.current);
+      window.clearTimeout(timerRef.current);
     };
-  }, [duration, timeup]);
+  }, [duration, timeUp]);
 
   useImperativeHandle(ref, () => ({
-    setVisible,
     ...((popupRef.current || {}) as any),
   }));
 
@@ -61,8 +60,7 @@ const Tooltip = forwardRef((props: TdTooltipProps, ref) => {
       destroyOnClose={destroyOnClose}
       showArrow={showArrow}
       overlayClassName={toolTipClass}
-      visible={isTipShowed}
-      onVisibleChange={handleShowTip}
+      onVisibleChange={handleVisibleChange}
       placement={placement}
       {...restProps}
     >
